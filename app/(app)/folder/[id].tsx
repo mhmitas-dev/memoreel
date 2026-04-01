@@ -3,7 +3,7 @@ import NameInputModal from '@/components/NameInputModal';
 import { createNode, getNodes, Node } from '@/lib/nodes';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
     FlatList,
@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
-export default function HomeScreen() {
+export default function FolderScreen() {
     const router = useRouter();
+    const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
+
     const [nodes, setNodes] = useState<Node[]>([]);
     const [userId, setUserId] = useState<string | null>(null);
     const [menuVisible, setMenuVisible] = useState(false);
@@ -25,17 +26,15 @@ export default function HomeScreen() {
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user) {
-                setUserId(session.user.id);
-            }
+            if (session?.user) setUserId(session.user.id);
         });
     }, []);
 
     const loadNodes = useCallback(() => {
-        if (!userId) return;
-        const result = getNodes(userId, null);
+        if (!userId || !id) return;
+        const result = getNodes(userId, id);
         setNodes(result);
-    }, [userId]);
+    }, [userId, id]);
 
     useEffect(() => {
         loadNodes();
@@ -46,9 +45,9 @@ export default function HomeScreen() {
         setNameModalVisible(true);
     }
 
-    function handleCreate(name: string) {
-        if (!userId || !pendingType) return;
-        createNode(userId, null, pendingType, name);
+    function handleCreate(nodeName: string) {
+        if (!userId || !pendingType || !id) return;
+        createNode(userId, id, pendingType, nodeName);
         loadNodes();
     }
 
@@ -80,7 +79,10 @@ export default function HomeScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>My Library</Text>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="chevron-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.title} numberOfLines={1}>{decodeURIComponent(name ?? '')}</Text>
                 <TouchableOpacity style={styles.addBtn} onPress={() => setMenuVisible(true)}>
                     <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
@@ -93,9 +95,9 @@ export default function HomeScreen() {
                 contentContainerStyle={nodes.length === 0 && styles.emptyContainer}
                 ListEmptyComponent={
                     <View style={styles.empty}>
-                        <Ionicons name="library-outline" size={48} color="#333" />
-                        <Text style={styles.emptyText}>Nothing here yet</Text>
-                        <Text style={styles.emptySubText}>Tap + to create a folder or deck</Text>
+                        <Ionicons name="folder-open-outline" size={48} color="#333" />
+                        <Text style={styles.emptyText}>This folder is empty</Text>
+                        <Text style={styles.emptySubText}>Tap + to add something</Text>
                     </View>
                 }
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -121,12 +123,23 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#0f0f0f' },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingVertical: 16,
+        gap: 10,
     },
-    title: { fontSize: 28, fontWeight: '700', color: '#fff' },
+    backBtn: {
+        width: 36,
+        height: 36,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    title: {
+        flex: 1,
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#fff',
+    },
     addBtn: {
         backgroundColor: '#6c47ff',
         width: 38,
