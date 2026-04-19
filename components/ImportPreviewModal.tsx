@@ -1,12 +1,12 @@
 import {
     FlatList,
     Modal,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
     visible: boolean;
@@ -16,6 +16,8 @@ interface Props {
 }
 
 export default function ImportPreviewModal({ visible, cards, onClose, onConfirm }: Props) {
+    const insets = useSafeAreaInsets();
+
     function handleConfirm() {
         onConfirm(cards);
         onClose();
@@ -23,7 +25,7 @@ export default function ImportPreviewModal({ visible, cards, onClose, onConfirm 
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-            <SafeAreaView style={styles.container}>
+            <View style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onClose}>
                         <Text style={styles.cancel}>Cancel</Text>
@@ -49,7 +51,7 @@ export default function ImportPreviewModal({ visible, cards, onClose, onConfirm 
                     ItemSeparatorComponent={() => <View style={styles.separator} />}
                     contentContainerStyle={styles.list}
                 />
-            </SafeAreaView>
+            </View>
         </Modal>
     );
 }
